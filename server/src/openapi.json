@@ -1,0 +1,79 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Aave position marketplace API",
+    "version": "1.0.0",
+    "description": "Read-only index of tradable Aave positions and their listings. Every value comes from chain logs and chain reads. The API makes no security decision: a purchase is validated by the marketplace contract at transaction time, not here. Amounts are strings holding integers in the smallest unit of the asset. Base currency amounts use the Aave oracle base, which is US dollars with 8 decimals. Health factors use 18 decimals, so 1e18 is exactly 1.0."
+  },
+  "servers": [{ "url": "http://127.0.0.1:8787" }],
+  "paths": {
+    "/api/config": {
+      "get": {
+        "summary": "Chain, contract addresses, fee and asset list",
+        "responses": { "200": { "description": "Configuration the client needs to build transactions" } }
+      }
+    },
+    "/api/listings": {
+      "get": {
+        "summary": "Active listings",
+        "parameters": [
+          { "name": "status", "in": "query", "schema": { "type": "string", "enum": ["active", "invalid", "expired", "all"], "default": "active" }, "description": "invalid means the health factor is under the threshold the seller set" },
+          { "name": "asset", "in": "query", "schema": { "type": "string" }, "description": "Symbol that must appear in the collateral or the debt, for example WETH" },
+          { "name": "paymentAsset", "in": "query", "schema": { "type": "string" } },
+          { "name": "minHealthFactor", "in": "query", "schema": { "type": "string" }, "description": "18 decimals" },
+          { "name": "maxHealthFactor", "in": "query", "schema": { "type": "string" } },
+          { "name": "maxPremiumBps", "in": "query", "schema": { "type": "integer" }, "description": "Negative values are discounts to net value" },
+          { "name": "minNetValueBase", "in": "query", "schema": { "type": "string" } },
+          { "name": "quickSale", "in": "query", "schema": { "type": "boolean" } },
+          { "name": "includePrivate", "in": "query", "schema": { "type": "boolean", "default": false } },
+          { "name": "sort", "in": "query", "schema": { "type": "string", "enum": ["expiry", "premium", "netValue", "healthFactor", "tokenId"] } },
+          { "name": "order", "in": "query", "schema": { "type": "string", "enum": ["asc", "desc"] } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 50, "maximum": 200 } },
+          { "name": "offset", "in": "query", "schema": { "type": "integer", "default": 0 } }
+        ],
+        "responses": { "200": { "description": "Matching listings, newest chain state" } }
+      }
+    },
+    "/api/listings/{tokenId}": {
+      "get": {
+        "summary": "One listing with its live position",
+        "parameters": [{ "name": "tokenId", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": { "200": { "description": "Listing" }, "404": { "description": "Not listed" } }
+      }
+    },
+    "/api/positions": {
+      "get": {
+        "summary": "Tradable positions",
+        "parameters": [{ "name": "owner", "in": "query", "schema": { "type": "string" } }],
+        "responses": { "200": { "description": "Positions with collateral and debt breakdown" } }
+      }
+    },
+    "/api/positions/{tokenId}": {
+      "get": {
+        "summary": "One position",
+        "parameters": [{ "name": "tokenId", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": { "200": { "description": "Position" }, "404": { "description": "Unknown position" } }
+      }
+    },
+    "/api/history": {
+      "get": {
+        "summary": "Event history",
+        "parameters": [
+          { "name": "address", "in": "query", "schema": { "type": "string" } },
+          { "name": "tokenId", "in": "query", "schema": { "type": "string" } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 100 } }
+        ],
+        "responses": { "200": { "description": "Newest first" } }
+      }
+    },
+    "/api/stats": { "get": { "summary": "Counts, volume and collected fees", "responses": { "200": { "description": "Totals" } } } },
+    "/api/stream": {
+      "get": {
+        "summary": "Server sent events, one message per indexer pass",
+        "description": "Use it to learn when to re-read the listing routes. Each message carries the block number and the listing count.",
+        "responses": { "200": { "description": "text/event-stream" } }
+      }
+    },
+    "/api/health": { "get": { "summary": "Indexer state", "responses": { "200": { "description": "Ready" }, "503": { "description": "Catching up" } } } }
+  }
+}

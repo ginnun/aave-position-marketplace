@@ -1,0 +1,104 @@
+{
+  "note": "Aave V3 Sepolia reserves. The local chain is a fork of Sepolia, so the same addresses apply. ltv and liquidationThreshold are basis points read from the market, and are what the interface needs to preview a health factor per asset rather than with one blended figure. Re-read them if the market is reconfigured.",
+  "assets": [
+    {
+      "symbol": "WETH",
+      "address": "0xC558DBdd856501FCd9aaF1E62eae57A9F0629a3c",
+      "decimals": 18,
+      "aToken": "0x5b071b590a59395fE4025A0Ccc1FcC931AAc1830",
+      "variableDebtToken": "0x22a35DB253f4F6D0029025D6312A3BdAb20C2c6A",
+      "faucetMintable": false,
+      "borrowable": false,
+      "ltv": 8000,
+      "liquidationThreshold": 8250
+    },
+    {
+      "symbol": "LINK",
+      "address": "0xf8Fb3713D459D7C1018BD0A49D19b4C44290EBE5",
+      "decimals": 18,
+      "aToken": "0x3FfAf50D4F4E96eB78f2407c090b72e86eCaed24",
+      "variableDebtToken": "0x34a4d932E722b9dFb492B9D8131127690CE2430B",
+      "faucetMintable": true,
+      "borrowable": true,
+      "ltv": 7000,
+      "liquidationThreshold": 7500
+    },
+    {
+      "symbol": "USDC",
+      "address": "0x94a9D9AC8a22534E3FaCa9F4e7F2E2cf85d5E4C8",
+      "decimals": 6,
+      "aToken": "0x16dA4541aD1807f4443d92D26044C1147406EB80",
+      "variableDebtToken": "0x36B5dE936eF1710E1d22EabE5231b28581a92ECc",
+      "faucetMintable": true,
+      "borrowable": true,
+      "ltv": 8000,
+      "liquidationThreshold": 8500
+    },
+    {
+      "symbol": "WBTC",
+      "address": "0x29f2D40B0605204364af54EC677bD022dA425d03",
+      "decimals": 8,
+      "aToken": "0x1804Bf30507dc2EB3bDEbbbdd859991EAeF6EefF",
+      "variableDebtToken": "0xEB016dFd303F19fbDdFb6300eB4AeB2DA7Ceac37",
+      "faucetMintable": true,
+      "borrowable": true,
+      "ltv": 7000,
+      "liquidationThreshold": 7500
+    },
+    {
+      "symbol": "USDT",
+      "address": "0xaA8E23Fb1079EA71e0a56F48a2aA51851D8433D0",
+      "decimals": 6,
+      "aToken": "0xAF0F6e8b0Dc5c913bbF4d14c22B4E78Dd14310B6",
+      "variableDebtToken": "0x9844386d29EEd970B9F6a2B9a676083b0478210e",
+      "faucetMintable": true,
+      "borrowable": true,
+      "ltv": 7500,
+      "liquidationThreshold": 8000
+    },
+    {
+      "symbol": "DAI",
+      "address": "0xFF34B3d4Aee8ddCd6F9AFFFB6Fe49bD371b8a357",
+      "decimals": 18,
+      "aToken": "0x29598b72eb5CeBd806C5dCD549490FdA35B13cD8",
+      "variableDebtToken": "0x22675C506A8FC26447aFFfa33640f6af5d4D4cF0",
+      "faucetMintable": true,
+      "borrowable": true,
+      "ltv": 7500,
+      "liquidationThreshold": 8000
+    },
+    {
+      "symbol": "AAVE",
+      "address": "0x88541670E55cC00bEEFD87eB59EDd1b7C511AC9a",
+      "decimals": 18,
+      "aToken": "0x6b8558764d3b7572136F17174Cb9aB1DDc7E1259",
+      "variableDebtToken": "0xf12fdFc4c631F6D361b48723c2F2800b84B519e6",
+      "faucetMintable": true,
+      "borrowable": true,
+      "ltv": 5000,
+      "liquidationThreshold": 6500
+    },
+    {
+      "symbol": "EURS",
+      "address": "0x6d906e526a4e2Ca02097BA9d0caA3c382F52278E",
+      "decimals": 2,
+      "aToken": "0xB20691021F9AcED8631eDaa3c0Cd2949EB45662D",
+      "variableDebtToken": "0x94482C7A7477196259D8a0f74fB853277Fa5a75b",
+      "faucetMintable": true,
+      "borrowable": true,
+      "ltv": 6500,
+      "liquidationThreshold": 7000
+    },
+    {
+      "symbol": "GHO",
+      "address": "0xc4bF5CbDaBE595361438F8c6a187bDc330539c60",
+      "decimals": 18,
+      "aToken": "0xd190eF37dB51Bb955A680fF1A85763CC72d083D4",
+      "variableDebtToken": "0x67ae46EF043F7A4508BD1d6B94DB6c33F0915844",
+      "faucetMintable": true,
+      "borrowable": true,
+      "ltv": 0,
+      "liquidationThreshold": 0
+    }
+  ]
+}

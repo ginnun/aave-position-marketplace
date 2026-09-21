@@ -1,0 +1,27 @@
+node_modules/
+.env
+.env.local
+dist/
+build/
+out/
+cache/
+broadcast/
+*.log
+.DS_Store
+data/
+
+# Local run state: process ids and logs
+.run/
+.playwright-mcp/
+e2e/test-results/
+e2e/playwright-report/
+web/public/deploy/
+web/public/abi.json
+web/public/assets.json
+
+# Local chain deployment state: written again by every `npm run dev`.
+deploy/31337.json
+deploy/31337.feeds.json
+
+# Contract dependencies are installed by scripts/deps.sh at pinned versions.
+contracts/lib/

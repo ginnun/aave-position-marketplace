@@ -1,0 +1,27 @@
+{
+  "name": "aave-position-marketplace",
+  "private": true,
+  "type": "module",
+  "workspaces": ["server", "web", "e2e"],
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "setup": "npm install && ./scripts/deps.sh && ./scripts/pin.sh && ./scripts/abi.sh",
+    "dev": "./scripts/dev.sh",
+    "chain": "./scripts/chain.sh",
+    "reset": "./scripts/reset.sh",
+    "stop": "./scripts/stop.sh",
+    "deps": "./scripts/deps.sh",
+    "abi": "./scripts/abi.sh",
+    "price": "./scripts/price.sh",
+    "warp": "./scripts/warp.sh",
+    "test": "./scripts/test.sh",
+    "test:contracts": "./scripts/test-contracts.sh",
+    "test:e2e": "./scripts/e2e.sh",
+    "deploy:testnet": "./scripts/deploy-testnet.sh",
+    "seed:testnet": "./scripts/seed-testnet.sh",
+    "server": "npm run -w server start",
+    "web": "npm run -w web dev",
+    "build": "npm run -w web build",
+    "build:static": "VITE_CHAIN_ID=${CHAIN_ID:-11155111} npm run -w web build"
+  }
+}

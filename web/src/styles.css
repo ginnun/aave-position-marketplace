@@ -1,0 +1,379 @@
+/* The palette is built around what the product actually shows: collateral above
+   debt, with a liquidation line between them. Teal is collateral, violet is debt,
+   crimson is the liquidation edge. Everything else stays quiet. */
+:root {
+  --paper: #e7eaee;
+  --surface: #ffffff;
+  --surface-sunk: #f2f4f7;
+  --ink: #16202a;
+  --ink-soft: #4e6070;
+  --ink-faint: #8595a3;
+  --rule: #ccd4dc;
+  --rule-strong: #16202a;
+
+  --collateral: #0f6e63;
+  --collateral-soft: #cfe5e1;
+  --debt: #6d4aa6;
+  --debt-soft: #ded5ef;
+  --danger: #c22e2e;
+  --danger-soft: #f5d9d9;
+  --caution: #a8720c;
+
+  --radius: 3px;
+  --gap: 16px;
+  --shell: 1180px;
+
+  color-scheme: light;
+  font-family: Archivo, ui-sans-serif, system-ui, sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+
+* { box-sizing: border-box; }
+
+html, body, #root { height: 100%; }
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-text-size-adjust: 100%;
+}
+
+a { color: inherit; text-underline-offset: 3px; }
+
+h1, h2, h3 {
+  margin: 0;
+  font-weight: 600;
+  font-stretch: 112%;
+  letter-spacing: -0.015em;
+  line-height: 1.15;
+}
+h1 { font-size: 26px; }
+h2 { font-size: 19px; }
+h3 { font-size: 15px; font-stretch: 100%; }
+
+p { margin: 0 0 12px; max-width: 68ch; }
+
+/* ---------------------------------------------------------------- shell */
+
+.shell { max-width: var(--shell); margin: 0 auto; padding: 0 20px; }
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: var(--surface);
+  border-bottom: 1px solid var(--rule);
+}
+.topbar__row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 56px;
+  flex-wrap: wrap;
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-stretch: 118%;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  text-decoration: none;
+  margin-right: auto;
+}
+.brand__mark {
+  display: inline-grid;
+  grid-template-columns: 12px 8px;
+  height: 14px;
+  width: 20px;
+}
+.brand__mark i:first-child { background: var(--debt); }
+.brand__mark i:last-child { background: var(--collateral); }
+
+.nav {
+  display: flex;
+  gap: 2px;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--rule);
+  background: var(--surface);
+  scrollbar-width: none;
+}
+.nav::-webkit-scrollbar { display: none; }
+.nav a {
+  padding: 9px 14px;
+  text-decoration: none;
+  color: var(--ink-soft);
+  white-space: nowrap;
+  border-bottom: 2px solid transparent;
+  font-weight: 500;
+}
+.nav a[aria-current='page'] { color: var(--ink); border-bottom-color: var(--rule-strong); }
+.nav a:hover { color: var(--ink); }
+
+/* main also carries .shell, and a class beats an element selector, so this has to
+   be at least as specific or the vertical padding is silently dropped. */
+main.shell { padding-top: 24px; padding-bottom: 72px; }
+
+/* ---------------------------------------------------------------- pieces */
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+}
+.card + .card { margin-top: 12px; }
+.card__head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--rule);
+}
+.card__body { padding: 16px; }
+
+.stack { display: grid; gap: 12px; }
+.row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.spread { display: flex; gap: 10px; align-items: baseline; justify-content: space-between; }
+.grid-2 { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+
+.muted { color: var(--ink-soft); }
+.faint { color: var(--ink-faint); }
+.small { font-size: 13px; }
+.tiny { font-size: 12px; }
+.num { font-variant-numeric: tabular-nums; }
+.big {
+  font-stretch: 118%;
+  font-weight: 600;
+  font-size: 30px;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+.tag {
+  display: inline-block;
+  padding: 1px 7px;
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ink-soft);
+  background: var(--surface-sunk);
+}
+.tag--active { color: var(--collateral); border-color: var(--collateral); background: var(--collateral-soft); }
+.tag--invalid { color: var(--danger); border-color: var(--danger); background: var(--danger-soft); }
+.tag--expired { color: var(--ink-faint); }
+.tag--quick { color: var(--caution); border-color: var(--caution); background: #f6ecd8; }
+.tag--private { color: var(--debt); border-color: var(--debt); background: var(--debt-soft); }
+
+.pos { color: var(--collateral); }
+.neg { color: var(--danger); }
+
+/* ---------------------------------------------------------------- risk bar */
+
+/* Full width is the collateral value. The filled part is the debt. The notch is
+   the point where Aave starts allowing liquidation. */
+.risk { display: block; }
+.risk__track {
+  position: relative;
+  height: 22px;
+  background: var(--collateral-soft);
+  border: 1px solid var(--collateral);
+  overflow: hidden;
+}
+.risk__fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: var(--debt);
+  transition: width 240ms ease;
+}
+.risk--danger .risk__fill { background: var(--danger); }
+.risk__line {
+  position: absolute;
+  top: -1px;
+  bottom: -1px;
+  width: 2px;
+  background: var(--danger);
+}
+.risk__line::after {
+  content: '';
+  position: absolute;
+  top: -1px;
+  left: -3px;
+  border: 4px solid transparent;
+  border-top-color: var(--danger);
+}
+.risk__legend {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 5px;
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+
+/* ---------------------------------------------------------------- table */
+
+.table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.table th {
+  text-align: left;
+  font-weight: 500;
+  color: var(--ink-soft);
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--rule);
+  white-space: nowrap;
+}
+.table td { padding: 10px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+.table tr:last-child td { border-bottom: 0; }
+.table .right, .right { text-align: right; }
+.scroll-x { overflow-x: auto; }
+
+/* ---------------------------------------------------------------- controls */
+
+button, .button {
+  font: inherit;
+  font-weight: 500;
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--radius);
+  background: var(--ink);
+  color: #fff;
+  padding: 8px 14px;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+button:hover:not(:disabled), .button:hover { background: #24313d; }
+button:disabled { opacity: 0.45; cursor: not-allowed; }
+button.ghost { background: transparent; color: var(--ink); border-color: var(--rule); }
+button.ghost:hover:not(:disabled) { background: var(--surface-sunk); }
+button.link {
+  background: none; border: 0; color: var(--ink); padding: 0;
+  text-decoration: underline; font-weight: 500;
+}
+button.small, .button.small { padding: 4px 10px; font-size: 13px; }
+
+:focus-visible { outline: 2px solid var(--debt); outline-offset: 2px; }
+
+label { display: block; font-size: 13px; color: var(--ink-soft); margin-bottom: 4px; }
+input, select {
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+  width: 100%;
+  padding: 7px 9px;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--ink);
+}
+input:disabled { background: var(--surface-sunk); color: var(--ink-soft); }
+.field { margin-bottom: 12px; }
+.field__hint { font-size: 12px; color: var(--ink-faint); margin-top: 3px; }
+
+fieldset { border: 1px solid var(--rule); border-radius: var(--radius); padding: 12px; margin: 0 0 12px; }
+legend { font-size: 13px; color: var(--ink-soft); padding: 0 5px; }
+
+/* ---------------------------------------------------------------- notices */
+
+.notice {
+  border: 1px solid var(--rule);
+  border-left-width: 3px;
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  background: var(--surface);
+  font-size: 14px;
+}
+.notice--warn { border-left-color: var(--caution); }
+.notice--error { border-left-color: var(--danger); }
+.notice--info { border-left-color: var(--debt); }
+.notice--ok { border-left-color: var(--collateral); }
+
+.empty {
+  padding: 40px 20px;
+  text-align: center;
+  color: var(--ink-soft);
+  border: 1px dashed var(--rule);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.preview {
+  background: var(--surface-sunk);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  padding: 12px;
+  font-size: 14px;
+}
+/* The class sits either on a wrapper around the list, or on the list itself. */
+.preview dl,
+dl.preview { display: grid; grid-template-columns: 1fr auto; gap: 5px 12px; margin: 0; }
+.preview dt { color: var(--ink-soft); }
+.preview dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; }
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(22, 32, 42, 0.45);
+  display: grid;
+  place-items: end center;
+  z-index: 40;
+  padding: 0;
+}
+.modal {
+  background: var(--surface);
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--radius) var(--radius) 0 0;
+  width: min(560px, 100%);
+  max-height: 90dvh;
+  overflow-y: auto;
+}
+@media (min-width: 640px) {
+  .modal-backdrop { place-items: center; padding: 20px; }
+  .modal { border-radius: var(--radius); }
+}
+.modal__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--rule);
+  position: sticky;
+  top: 0;
+  background: var(--surface);
+}
+.modal__body { padding: 16px; }
+
+.wallet-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  padding: 4px 9px;
+  font-size: 13px;
+  background: var(--surface-sunk);
+}
+.dot { width: 7px; height: 7px; border-radius: 50%; background: var(--collateral); }
+.dot--warn { background: var(--danger); }
+
+.lang { display: flex; border: 1px solid var(--rule); border-radius: var(--radius); overflow: hidden; }
+.lang button {
+  border: 0; border-radius: 0; background: var(--surface); color: var(--ink-soft);
+  padding: 4px 9px; font-size: 13px;
+}
+.lang button[aria-pressed='true'] { background: var(--ink); color: #fff; }
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+}
+
+@media (max-width: 640px) {
+  .shell { padding: 0 12px; }
+  h1 { font-size: 22px; }
+  .big { font-size: 25px; }
+}

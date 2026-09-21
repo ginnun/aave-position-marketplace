@@ -1,0 +1,89 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# The fork tests read a public Sepolia endpoint. Set the SEPOLIA_RPC_URL secret to
+# use your own, which is faster and less likely to rate limit.
+env:
+  SEPOLIA_RPC_URL: ${{ secrets.SEPOLIA_RPC_URL || 'https://ethereum-sepolia-rpc.publicnode.com' }}
+
+jobs:
+  contracts:
+    name: Contracts
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: stable
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install
+        run: |
+          cp .env.example .env
+          npm ci
+          ./scripts/deps.sh
+
+      - name: Pin a fork block the public endpoint still serves
+        run: ./scripts/pin.sh
+
+      - name: Formatting
+        run: cd contracts && forge fmt --check
+
+      - name: Lint
+        run: cd contracts && forge lint
+
+      - name: Tests
+        run: ./scripts/test-contracts.sh -vv
+
+  browser:
+    name: Browser
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: stable
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install
+        run: |
+          cp .env.example .env
+          npm ci
+          ./scripts/deps.sh
+          ./scripts/abi.sh
+          npx playwright install --with-deps chromium
+
+      - name: Pin a fork block the public endpoint still serves
+        run: ./scripts/pin.sh
+
+      - name: Type check
+        run: npm run -w web exec tsc -- -b --pretty false
+
+      - name: Tests
+        run: ./scripts/e2e.sh
+
+      - name: Upload the report when something fails
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            e2e/test-results
+            e2e/playwright-report
+          retention-days: 7

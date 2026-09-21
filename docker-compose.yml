@@ -1,0 +1,15 @@
+# Runs the interface and the indexer against a chain that already has the
+# contracts deployed. Deploy first with `npm run deploy:testnet`, which writes
+# deploy/11155111.json, then start this.
+services:
+  marketplace:
+    build: .
+    ports:
+      - "8787:8787"
+    environment:
+      CHAIN_ID: "${CHAIN_ID:-11155111}"
+      # What this container reads from. Keep a private endpoint here.
+      RPC_URL: "${SEPOLIA_RPC_URL:-https://ethereum-sepolia-rpc.publicnode.com}"
+      # What browsers are told to use. This one is public, so it must carry no credential.
+      PUBLIC_RPC_URL: "${PUBLIC_RPC_URL:-https://ethereum-sepolia-rpc.publicnode.com}"
+    restart: unless-stopped
