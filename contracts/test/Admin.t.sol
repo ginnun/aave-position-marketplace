@@ -4,8 +4,13 @@ pragma solidity ^0.8.28;
 import {ForkBase} from "./ForkBase.t.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {
+    IPoolAddressesProvider
+} from "aave-v3-origin/contracts/interfaces/IPoolAddressesProvider.sol";
 import {AaveSepolia} from "../src/config/AaveSepolia.sol";
+import {PositionManager} from "../src/PositionManager.sol";
 import {Marketplace} from "../src/Marketplace.sol";
+import {IEscrow} from "../src/interfaces/IEscrow.sol";
 import {MockAggregator} from "../src/mocks/MockAggregator.sol";
 
 /// @notice Epic 9 plus the trust limits from US-17: what the admin can and cannot do.
@@ -63,6 +68,45 @@ contract AdminTest is ForkBase {
         vm.prank(admin);
         vm.expectRevert(Marketplace.NotSeller.selector);
         market.cancel(tokenId);
+    }
+
+    // ------------------------------------------------------------------ escrow wiring
+
+    /// @dev The escrow is wired once and never again. The first call clears the setter along with
+    ///      the slot it filled, so a repeat from the same deployer is refused as an unknown caller
+    ///      rather than as a second write.
+    function test_setEscrow_refusesSecondCall() public {
+        vm.prank(admin); // the deployer of `manager` in ForkBase
+        vm.expectRevert(PositionManager.NotEscrowSetter.selector);
+        manager.setEscrow(market);
+        assertEq(address(manager.escrow()), address(market), "escrow changed");
+    }
+
+    function test_setEscrow_refusesStranger() public {
+        PositionManager fresh =
+            new PositionManager(pool, IPoolAddressesProvider(AaveSepolia.POOL_ADDRESSES_PROVIDER));
+
+        vm.prank(stranger);
+        vm.expectRevert(PositionManager.NotEscrowSetter.selector);
+        fresh.setEscrow(market);
+
+        // Only the deployer was missing, so the same call from this contract goes through.
+        fresh.setEscrow(market);
+        assertEq(address(fresh.escrow()), address(market), "deployer could not wire the escrow");
+    }
+
+    /// @dev Wiring the zero address would clear the setter without leaving an escrow behind, which
+    ///      is a state nothing can repair. The call is refused and the one shot stays unspent.
+    function test_setEscrow_refusesZeroAddress() public {
+        PositionManager fresh =
+            new PositionManager(pool, IPoolAddressesProvider(AaveSepolia.POOL_ADDRESSES_PROVIDER));
+
+        vm.expectRevert(PositionManager.ZeroEscrow.selector);
+        fresh.setEscrow(IEscrow(address(0)));
+
+        // The refusal cost nothing: the real marketplace still goes in.
+        fresh.setEscrow(market);
+        assertEq(address(fresh.escrow()), address(market), "the one shot was spent on the refusal");
     }
 
     // ------------------------------------------------------------------ US-34 emergency stop

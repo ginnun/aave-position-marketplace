@@ -62,7 +62,7 @@ contract PositionManager is ERC721, ReentrancyGuard {
     error NotOwner();
     error NotRecipient();
     error Escrowed();
-    error EscrowAlreadySet();
+    error ZeroEscrow();
     error NotEscrowSetter();
     error UnknownPosition();
     error BadCallback();
@@ -100,9 +100,11 @@ contract PositionManager is ERC721, ReentrancyGuard {
     }
 
     /// @notice One-shot wiring of the marketplace that is allowed to escrow positions.
+    /// @dev The zero address is refused, so the single shot cannot be spent on a wiring that
+    ///      leaves no escrow and no setter behind.
     function setEscrow(IEscrow escrow_) external {
         if (msg.sender != escrowSetter) revert NotEscrowSetter();
-        if (address(escrow) != address(0)) revert EscrowAlreadySet();
+        if (address(escrow_) == address(0)) revert ZeroEscrow();
         escrow = escrow_;
         escrowSetter = address(0);
         emit EscrowSet(address(escrow_));

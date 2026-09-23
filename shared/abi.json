@@ -1076,11 +1076,6 @@
     },
     {
       "type": "error",
-      "name": "EscrowAlreadySet",
-      "inputs": []
-    },
-    {
-      "type": "error",
       "name": "Escrowed",
       "inputs": []
     },
@@ -1165,6 +1160,11 @@
     {
       "type": "error",
       "name": "ZeroAmount",
+      "inputs": []
+    },
+    {
+      "type": "error",
+      "name": "ZeroEscrow",
       "inputs": []
     }
   ],
