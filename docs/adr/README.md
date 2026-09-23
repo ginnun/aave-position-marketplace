@@ -11,3 +11,4 @@ what follows from it.
 | [0004](0004-pricing-and-guard-rails.md) | Dynamic price from the Aave oracle, guard rails at transaction time |
 | [0005](0005-local-environment.md) | The local chain is a Sepolia fork pinned to one block |
 | [0006](0006-technology-choices.md) | Foundry, a dependency free indexer, and a viem based interface |
+| [0007](0007-aave-v4-assessment.md) | What migrating to Aave V4 costs, and why the project stays on V3 for now |

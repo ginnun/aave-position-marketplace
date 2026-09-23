@@ -13,7 +13,7 @@ Three contracts, one indexer, one interface, and two test suites.
 | `PositionAccount` | 29 | One isolated Aave account per position |
 | `PositionManager` | 675 | Ownership token, position management, migration in and out |
 | `Marketplace` | 311 | Escrow, listing, pricing, purchase, fee, emergency stop |
-| `contracts/test/` | 1,258 | Fork tests, fuzz tests and invariants |
+| `contracts/test/` | 1,527 | Fork tests, fuzz tests and invariants |
 | `server/` | 998 | Indexes chain logs into memory, serves reads and a change stream |
 | `web/` | 4,192 | Interface, in Turkish and English, for a phone or a desktop |
 | `e2e/` | 797 | Browser tests, headless, with wallet interaction |
@@ -22,7 +22,7 @@ Three contracts, one indexer, one interface, and two test suites.
 
 Run them with `npm run test`.
 
-**Contracts: 41 passed, 0 failed.** They run against a pinned fork of the live Aave Sepolia
+**Contracts: 64 passed, 0 failed.** They run against a pinned fork of the live Aave Sepolia
 market, so every result is what the real protocol does. Eight of them are invariants driven by a
 handler that lists, cancels, buys, strengthens, weakens, and moves prices at random, over 2,048
 calls per run:
@@ -112,7 +112,7 @@ ones that shaped the product most:
 | A payment asset that blocklists the seller would make a sale revert | Not handled. A pull payment model is the fix. [SUGGESTIONS.md](SUGGESTIONS.md) item 1 |
 | The ownership token can be sold on another marketplace, where no guard rail applies | A deliberate consequence of ADR-0001. Item 2 |
 | The Aave oracle does not check for stale prices | Both sides are covered against a wrong payment asset price, but a frozen feed still makes net value wrong. Item 3 |
-| A token sent to the marketplace by mistake stays there | A rescue function would break US-17. Item 5 |
+| A foreign token sent to the marketplace by mistake stays there | The ownership token itself is refused outside `list`. A scoped rescue function is item 5 |
 | The pinned fork block ages out of public endpoints | `scripts/pin.sh` re-pins. An archive endpoint removes the problem |
 
 ## Verified from a clean checkout

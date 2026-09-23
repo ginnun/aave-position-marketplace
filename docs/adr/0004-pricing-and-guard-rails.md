@@ -17,8 +17,9 @@ Net value means total collateral value minus total debt value.
 - Seller guard rails are `minHealthFactor`, below which the listing is invalid and cannot be
   bought, and `minPrice`, an absolute floor for dynamic listings.
 - Buyer guard rails are arguments to `buy`: `maxPrice`, `minNetValueBase`, `maxDebtBase`,
-  `minHealthFactor`, and `deadline`. Each one is checked against chain state inside the
-  transaction. A crossed limit reverts with `LimitExceeded(Limit)`, which names the limit.
+  `minHealthFactor`, `deadline`, and `paymentAsset`. Each one is checked against chain state
+  inside the transaction. A crossed limit reverts with `LimitExceeded(Limit)`, which names the
+  limit.
 - Payment assets are allowlisted by the administrator.
 
 ## Reasons

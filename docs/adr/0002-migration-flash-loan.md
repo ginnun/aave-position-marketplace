@@ -47,10 +47,12 @@ Because no premium is charged, migration is free. Option 2 asks the user for cas
 - Before carrying a position in, the user must approve their aTokens to the manager. Before
   carrying one out, the target address must give credit delegation. The interface shows both as
   separate steps.
-- `Pool.repay` refuses `type(uint256).max` when repaying for another address, with error code 40.
-  The flow therefore repays exactly the flash loan amount. Both numbers are read in the same
-  block, so they are equal.
-- Delegation is reset at the end of the transaction, so no leftover borrowing right remains.
+- `Pool.repay` refuses `type(uint256).max` when repaying for another address, with
+  `NoExplicitAmountToRepayOnBehalf`. The flow therefore repays exactly the flash loan amount. Both
+  numbers are read in the same block, so they are equal.
+- `migrateIn` resets the delegation it granted at the end of the transaction, so no leftover
+  borrowing right remains on the position account. The delegation a user grants for `migrateOut`
+  stays until the user lowers it. See `docs/THREAT_MODEL.md` T-09.
 
 ## Sources
 

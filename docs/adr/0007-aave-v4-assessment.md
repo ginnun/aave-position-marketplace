@@ -55,7 +55,7 @@ is repaid still fails, and repaying their debt first still needs capital from so
 Carries over unchanged, because it never depended on Aave:
 
 - One isolated account per position, owned by an ERC-721. A sale moves the token, not the Aave
-  position, so no protocol call happens during a purchase at all.
+  position, so a purchase only reads from the protocol and never writes to it.
 - Escrow is the lock.
 - The marketplace: listing, fixed and dynamic pricing, guard rails, fee cap, emergency stop.
 

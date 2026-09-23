@@ -18,8 +18,10 @@ a sale, a cancellation, or an expiry. That is US-17.
 Option 1. `PositionManager.isEscrowed(tokenId)` returns only this:
 
 ```solidity
-ownerOf(tokenId) == address(escrow)
+address(escrow) != address(0) && _ownerOf(tokenId) == address(escrow)
 ```
+
+The first term keeps every position unlocked until the marketplace is linked.
 
 ## Reasons
 
@@ -34,12 +36,13 @@ collateral and repay debt while listed, but cannot withdraw collateral or borrow
 
 ## Consequences
 
-- `PositionManager` knows the marketplace through the `IEscrow` interface. The link is set once at
-  deployment and cannot be changed.
+- `PositionManager` knows the marketplace through the `IEscrow` interface. The deployer sets the
+  link once, with `setEscrow`, and nobody can change it after that. The zero address is refused,
+  so the single call cannot be wasted.
 - Weakening actions are `withdraw`, `borrow`, and `setEMode`. They are refused while listed.
 - Strengthening actions are `supply` and `repay`. They are always open.
 - The marketplace has no function that sends a position to a third address. `cancel` and
   `closeExpired` return it to the seller only, and both work during an emergency stop.
-- If someone sends an ownership token straight to the marketplace with `transferFrom`, without
-  calling `list`, the token is stuck there. Every ERC-721 escrow marketplace behaves this way. It
-  is recorded in the threat model.
+- A token cannot enter the marketplace outside `list`. `PositionManager` refuses any transfer to
+  the marketplace that the marketplace did not start itself, so no token gets stuck without a
+  listing record. See `docs/THREAT_MODEL.md` T-12.

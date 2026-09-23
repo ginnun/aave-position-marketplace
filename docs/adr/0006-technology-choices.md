@@ -10,7 +10,7 @@ Status: accepted, 2026-09-18
 | Aave interfaces | `aave-dao/aave-v3-origin` v3.4.0 | hand written interfaces | The official source, with struct layouts and configuration libraries included |
 | Addresses | `@aave-dao/aave-address-book` 4.68.1 | copying from documentation | The official registry, versioned. Every address was also checked on the chain |
 | Libraries | OpenZeppelin 5.5.0 | solmate | ERC-721, `Ownable2Step`, `Clones`, `SafeERC20`, and `Math.mulDiv` with an explicit rounding mode |
-| Server | Node 26, `node:http`, viem | Express, Postgres, The Graph | See below |
+| Server | Node 22 or newer, `node:http`, viem | Express, Postgres, The Graph | See below |
 | Interface | Vite 8, React 19, viem | wagmi, RainbowKit | See below |
 | Browser tests | Playwright | Cypress with Synpress | The built in test wallet removes the need for a browser extension |
 
@@ -35,5 +35,5 @@ know the chain id, read a few live values, and send transactions. viem gives all
 directly. Adding wagmi would bring more API surface and version coupling than it saves.
 
 One side benefit follows. A **built in test wallet** that uses the local chain's ready made
-accounts takes about 40 lines. A new developer can try every flow without installing a browser
-extension, and the browser tests run fully headless.
+accounts is one small file, `web/src/lib/wallet.tsx`. A new developer can try every flow without
+installing a browser extension, and the browser tests run fully headless.

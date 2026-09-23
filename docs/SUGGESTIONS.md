@@ -24,10 +24,11 @@ None of them was built.
    position close to liquidation can be front run by a liquidation. The buyer's loss is capped by
    `minNetValueBase`. Using a private transaction pool could be documented for users.
 
-5. **A token sent to the marketplace by mistake.** If an ownership token is sent straight to the
-   marketplace with `transferFrom`, without calling `list`, it stays there. Adding a rescue
-   function would give the administrator the power to move a token, which contradicts US-17.
-   Refusing `onERC721Received` only stops `safeTransferFrom` calls.
+5. **A foreign token sent to the marketplace by mistake.** An ownership token cannot land in the
+   marketplace outside `list`, because `PositionManager._update` refuses the transfer (T-12 in the
+   threat model). Any other ERC-20 or ERC-721 sent there stays there. A rescue function limited to
+   foreign tokens can return them. If it excludes the ownership token and every payment asset, the
+   administrator gains no power over a position or a payment.
 
 ## Product
 
@@ -51,3 +52,11 @@ None of them was built.
 
 11. **Handing over administration.** The `Marketplace` administrator is a single address behind
     `Ownable2Step`. A real deployment should use a multisig wallet or a timelock.
+
+## Migration
+
+12. **One transaction to carry a position out.** Today the owner signs one `approveDelegation` per
+    debt asset, then `migrateOut`. Aave debt tokens support `delegationWithSig`, a signed permission
+    that the manager can submit itself. With it, `migrateOut` takes the signatures as arguments and
+    the whole move is one transaction, with no allowance left behind. The interface already keeps
+    the allowance small, at the debt plus 0.1 percent.

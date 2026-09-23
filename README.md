@@ -48,7 +48,7 @@ Three ideas carry the design.
 
 **One account per position.** Aave tracks risk per address, so each position gets its own account
 and keeps its own health factor, e-mode and collateral flags. Ownership is an ERC-721 token. A sale
-moves the token, so no Aave call happens during a purchase at all.
+moves the token, so a purchase only reads from Aave and never writes to it.
 
 **Escrow is the lock.** While the token sits in the marketplace, `PositionManager` refuses
 withdrawals, new borrows and e-mode changes, and still allows supply and repay. There is no second
@@ -131,7 +131,7 @@ npm run test:e2e        # browser, headless, on a chain rebuilt from scratch
 
 For the browser suite you also need a browser once: `npx playwright install chromium`.
 
-**41 contract tests** run against the real Aave V3 Sepolia market on a pinned fork, so a passing
+**64 contract tests** run against the real Aave V3 Sepolia market on a pinned fork, so a passing
 test means the real protocol behaved that way. Eight of them are invariants, driven by a handler
 that lists, cancels, buys, strengthens, weakens and moves prices at random over 2,048 calls per
 run:
