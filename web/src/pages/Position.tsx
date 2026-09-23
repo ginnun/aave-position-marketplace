@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
 import type { Address } from 'viem';
 import type { AppContext } from '../App';
-import { useApi, type Position, type ServerAsset } from '../lib/api';
+import { useApi, type AssetAmount, type Position, type ServerAsset } from '../lib/api';
 import { useI18n } from '../lib/i18n';
 import { useWallet } from '../lib/wallet';
 import { useTx } from '../lib/useTx';
-import { DEBT_TOKEN_ABI, ERC20_ABI, MAX_UINT, ZERO_ADDRESS } from '../lib/contracts';
+import { BLOCKERS, DEBT_TOKEN_ABI, ERC20_ABI, MAX_UINT, ZERO_ADDRESS } from '../lib/contracts';
 import { Card, Empty, Field, Notice, TxFeedback } from '../components/ui';
 import {
   amount, countdown, healthFactorText, money, parseAmount, percent, usd,
@@ -427,11 +427,15 @@ function CancelListing({ tokenId, ctx, onDone }: { tokenId: string; ctx: AppCont
 
 // ---------------------------------------------------------------- migrate out
 
+// The delegation the manager still needs, with the debt it has to cover.
+type Delegation = { asset: ServerAsset; amount: string };
+
 function MigrateOut({ position, ctx, onDone }: { position: Position; ctx: AppContext; onDone: () => void }) {
   const { t } = useI18n();
   const { address, publicClient } = useWallet();
   const tx = useTx();
-  const [pending, setPending] = useState<string[] | null>(null);
+  const [pending, setPending] = useState<Delegation[] | null>(null);
+  const [warning, setWarning] = useState('None');
   const manager = ctx.config.contracts.positionManager as Address;
 
   // A stable description of the debt, so this does not re-run on every poll.
@@ -440,48 +444,70 @@ function MigrateOut({ position, ctx, onDone }: { position: Position; ctx: AppCon
   useEffect(() => {
     if (!address) return;
     let live = true;
-    Promise.all(position.debt.map(async (d) => {
+    const row = (d: AssetAmount): Delegation | null => {
       const asset = ctx.config.assets.find((a) => a.address.toLowerCase() === (d.address ?? '').toLowerCase());
-      if (!asset) return null;
+      return asset ? { asset, amount: d.amount } : null;
+    };
+    Promise.all(position.debt.map(async (d) => {
+      const entry = row(d);
+      if (!entry) return null;
       const allowed = await publicClient.readContract({
-        address: asset.variableDebtToken as Address,
+        address: entry.asset.variableDebtToken as Address,
         abi: DEBT_TOKEN_ABI,
         functionName: 'borrowAllowance',
         args: [address, manager],
       }) as bigint;
-      return allowed < BigInt(d.amount) ? asset.symbol : null;
+      return allowed < BigInt(d.amount) ? entry : null;
     }))
-      .then((rows) => { if (live) setPending(rows.filter(Boolean) as string[]); })
-      .catch(() => { if (live) setPending(position.debt.map((d) => d.symbol)); });
+      .then((rows) => { if (live) setPending(rows.filter(Boolean) as Delegation[]); })
+      .catch(() => { if (live) setPending(position.debt.map(row).filter(Boolean) as Delegation[]); });
     return () => { live = false; };
     // debtKey stands in for position.debt, and ctx.assets never changes
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [address, debtKey, manager, publicClient, tx.status]);
 
+  useEffect(() => {
+    if (!address) return;
+    let live = true;
+    publicClient.readContract({
+      address: manager,
+      abi: ctx.abis.PositionManager,
+      functionName: 'migrateOutWarning',
+      args: [BigInt(position.tokenId), address],
+    })
+      // The note is advice, not a gate. A failed read simply says nothing.
+      .then((code) => { if (live) setWarning(BLOCKERS[Number(code)] ?? 'None'); })
+      .catch(() => { if (live) setWarning('None'); });
+    return () => { live = false; };
+    // ctx.abis never changes after the first load
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [address, manager, position.tokenId, publicClient, tx.status]);
+
   // A null list means the delegation check has not answered yet.
   const next = pending?.[0];
-  const nextAsset = ctx.config.assets.find((a) => a.symbol === next);
 
   return (
     <Card title={t('migrate.out.title')}>
       <p className="small muted">{t('migrate.out.intro')}</p>
       {(pending?.length ?? 0) > 0 && <p className="small muted">{t('migrate.out.delegateHint')}</p>}
+      {warning !== 'None' && <p className="small muted">{t(`migrate.blocked.${warning}` as never)}</p>}
       <TxFeedback status={tx.status} error={tx.error} hash={tx.hash} />
       <div className="row" style={{ marginTop: 12 }}>
         {pending === null ? (
           <button type="button" disabled>{t('common.loading')}…</button>
-        ) : nextAsset ? (
+        ) : next ? (
           <button
             type="button"
             disabled={tx.busy}
             onClick={() => tx.send({
-              address: nextAsset.variableDebtToken as Address,
+              address: next.asset.variableDebtToken as Address,
               abi: DEBT_TOKEN_ABI,
               functionName: 'approveDelegation',
-              args: [manager, MAX_UINT],
+              // 0.1% over the debt, for the interest that accrues before the carry runs.
+              args: [manager, (BigInt(next.amount) * 1001n) / 1000n],
             })}
           >
-            {t('migrate.out.delegate', { s: nextAsset.symbol })}
+            {t('migrate.out.delegate', { s: next.asset.symbol })}
           </button>
         ) : (
           <button
