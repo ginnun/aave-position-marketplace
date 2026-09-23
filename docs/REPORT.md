@@ -141,8 +141,8 @@ VITE_CHAIN_ID=11155111 npm run build   # writes web/dist
 ```
 
 This was checked against the live Sepolia deployment: the built site was served by a plain file
-server with no API behind it, and a headless browser read the real listing, its price of 54 USDC
-and its health factor of 3.30 straight from the chain.
+server with no API behind it, and a headless browser read the real listing, its price of 10.80
+USDC and its health factor of 3.30 straight from the chain.
 
 The activity page is the one thing that needs the indexer, because reading the whole log history
 from a browser is not reasonable. For that, `docker compose up --build` runs the interface and the
@@ -170,29 +170,29 @@ docker compose up --build # interface and API in one container
 
 ## Live on the public testnet
 
-US-38 is done. The platform is deployed on Ethereum Sepolia, block 11749577, and it holds a real
+US-38 is done. The platform is deployed on Ethereum Sepolia, block 11763998, and it holds a real
 listed position.
 
 | What | Address |
 |---|---|
-| PositionManager | `0xC52104aC0acbeaABB06DC246626A77144aBaaF7d` |
-| Marketplace | `0x14C14C8Fc902e79B164aFFb4234AdB692610D106` |
+| PositionManager | `0xa1cDe4d2D2615C82d57e585Ca72c7680184528D3` |
+| Marketplace | `0x2b8c3987bCd425cEF9245580c7eBFb2797256426` |
 | Administrator and fee recipient | `0x60a9055D2A06736749f7165576eD8464B7B76630` |
-| Position 1 account | `0xdF3e0cdb47e9623E2CCDDEcaC415eb997635F761` |
+| Position 1 account | `0xf6F75C8B164Fe8726B396f69353af9Edad39bfFC` |
 
 Transaction proofs, all on `sepolia.etherscan.io`:
 
 | Step | Hash |
 |---|---|
-| Deploy PositionManager | `0xbad8845d67de9513e7ad903d9deb2a84c8d337364ee01a1ef4f5c04b21fa29ff` |
-| Deploy Marketplace | `0x13b2744ebd7c225c8168360ff392fd90dd15bd7b0eacef4a0263c92f845e2f3f` |
-| Wire the escrow | `0x5e7411ad18e1685d8d37c944e4a3b1449c94aa54e72c80dfa9e983bbe2a66072` |
-| Allow USDC, DAI, USDT as payment | `0x8967769b…`, `0x24b9c974…`, `0x68460f23…` |
-| Create and supply position 1 | `0x384a4e7a…`, `0xc0d31f7a…` |
-| Borrow against it | `0xa708ed2f8e7f2fb878ee11a07b1dc9a6a2827cbec480413c40c99637ab515a53` |
-| List it | `0x960c4acdd2d6bca3d0fcb5d1bccb8cd05294a9c3555f32bc8303473e79d17f90` |
+| Deploy PositionManager | `0x36a583afbb31c10efb5722998852976a90b33b59b0e319ded19c203d374ae7d4` |
+| Deploy Marketplace | `0x10c17fa6c0bdfd20f0776a16b06f24eafe0c71b2f8e8ce72c477fab7504b11d6` |
+| Wire the escrow | `0x56ff490ddc58ab51ac5dd267c595762db472df27807c21b553e88dc0d2e046e8` |
+| Allow USDC, DAI, USDT as payment | `0xddf61223…`, `0x57501908…`, `0xdd114a1a…` |
+| Create and supply position 1 | `0x6b4a6522…`, `0x37b517d3…` |
+| Borrow against it | `0xd13d078a0cdcc59c78ce2bdf46f3f4f38cf0ec4a878fe37eb4df50651ddc08e5` |
+| List it | `0xd23bd944fa1295fcff8f7dd7f54e6cd756232b65c2b860ad321beaa40074b0e6` |
 
-Deployment cost 7,419,172 gas. Seeding the example position cost 1,058,072 more.
+Deployment cost 7,418,421 gas. Seeding the example position cost 1,058,072 more.
 
 The seeded position is real: 0.004 WETH of collateral against 4 USDT of debt, read back from the
 Aave pool as 16.00 USD against 4.00 USD, health factor 3.30. It is listed at 90% of net value,

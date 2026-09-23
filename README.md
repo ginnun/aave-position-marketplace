@@ -153,9 +153,9 @@ tests could not see, all listed in [the report](docs/REPORT.md).
 
 | What | Address |
 |---|---|
-| PositionManager | [`0xC52104aC0acbeaABB06DC246626A77144aBaaF7d`](https://sepolia.etherscan.io/address/0xC52104aC0acbeaABB06DC246626A77144aBaaF7d) |
-| Marketplace | [`0x14C14C8Fc902e79B164aFFb4234AdB692610D106`](https://sepolia.etherscan.io/address/0x14C14C8Fc902e79B164aFFb4234AdB692610D106) |
-| PositionAccount, the clone template | [`0xe9A668087D2778Cee612D10C6B5623204c07C9ed`](https://sepolia.etherscan.io/address/0xe9A668087D2778Cee612D10C6B5623204c07C9ed) |
+| PositionManager | [`0xa1cDe4d2D2615C82d57e585Ca72c7680184528D3`](https://sepolia.etherscan.io/address/0xa1cDe4d2D2615C82d57e585Ca72c7680184528D3) |
+| Marketplace | [`0x2b8c3987bCd425cEF9245580c7eBFb2797256426`](https://sepolia.etherscan.io/address/0x2b8c3987bCd425cEF9245580c7eBFb2797256426) |
+| PositionAccount, the clone template | [`0x06805624794E3dA6A965F76731455D8F0Fbc52D9`](https://sepolia.etherscan.io/address/0x06805624794E3dA6A965F76731455D8F0Fbc52D9) |
 
 All three are verified on the explorer, so you can read the source and call the views there.
 
