@@ -6,6 +6,11 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {
     ICreditDelegationToken
 } from "aave-v3-origin/contracts/interfaces/ICreditDelegationToken.sol";
+import {
+    IPoolAddressesProvider
+} from "aave-v3-origin/contracts/interfaces/IPoolAddressesProvider.sol";
+import {IPoolConfigurator} from "aave-v3-origin/contracts/interfaces/IPoolConfigurator.sol";
+import {IACLManager} from "aave-v3-origin/contracts/interfaces/IACLManager.sol";
 import {AaveSepolia} from "../src/config/AaveSepolia.sol";
 import {PositionManager} from "../src/PositionManager.sol";
 import {MockAggregator} from "../src/mocks/MockAggregator.sol";
@@ -15,6 +20,11 @@ import {DataTypes} from "aave-v3-origin/contracts/protocol/libraries/types/DataT
 contract MigrationTest is ForkBase {
     uint256 constant COLLATERAL = 2 ether; // 2 WETH, 8000 USD at the pinned block
     uint256 constant DEBT = 2_000e6; // 2000 USDT
+
+    /// @dev The Aave token reserve on Sepolia. It is the only reserve nobody owes anything on at
+    ///      the pinned block, which is what a siloed borrowing test needs, and it is not part of
+    ///      the addresses the product itself uses, so it stays out of AaveSepolia.
+    address constant AAVE_TOKEN = 0x88541670E55cC00bEEFD87eB59EDd1b7C511AC9a;
 
     function test_migrateIn_carriesCollateralAndDebt() public {
         openAavePosition(seller, COLLATERAL, DEBT);
@@ -197,6 +207,163 @@ contract MigrationTest is ForkBase {
     function _reserveStatus(address user, uint256 id) internal view returns (bool, bool) {
         uint256 data = pool.getUserConfiguration(user).data;
         return ((data >> (id * 2)) & 1 == 1, (data >> (id * 2 + 1)) & 1 == 1);
+    }
+
+    // ------------------------------------------------------------------ reserve configuration
+
+    /// @dev Hands this test contract the pool admin role, which covers every configurator setter
+    ///      used below, and answers with the configurator to call. Only the ACL admin may grant it.
+    function _configurator() internal returns (IPoolConfigurator) {
+        IPoolAddressesProvider provider =
+            IPoolAddressesProvider(AaveSepolia.POOL_ADDRESSES_PROVIDER);
+        IACLManager acl = IACLManager(provider.getACLManager());
+        if (!acl.isPoolAdmin(address(this))) {
+            vm.prank(AaveSepolia.ACL_ADMIN);
+            acl.addPoolAdmin(address(this));
+        }
+        return IPoolConfigurator(provider.getPoolConfigurator());
+    }
+
+    /// @dev Both halves of a refusal: the preflight view names the reason, and migrateIn refuses
+    ///      with the same one instead of failing somewhere inside Aave.
+    function _assertBlocked(address user, PositionManager.Blocker reason) internal {
+        assertEq(
+            uint256(manager.migrationBlocker(user)),
+            uint256(reason),
+            "preflight did not name the reason"
+        );
+
+        (address[] memory aTokens,,,) = manager.scan(user);
+        vm.startPrank(user);
+        for (uint256 i; i < aTokens.length; ++i) {
+            IERC20(aTokens[i]).approve(address(manager), type(uint256).max);
+        }
+        vm.expectRevert(abi.encodeWithSelector(PositionManager.MigrationBlocked.selector, reason));
+        manager.migrateIn();
+        vm.stopPrank();
+    }
+
+    /// @notice A paused reserve refuses every interaction, the aToken transfer included, so a
+    ///         position that touches one cannot be carried across.
+    function test_migrateIn_refusesAPausedReserve() public {
+        openAavePosition(seller, COLLATERAL, DEBT);
+        _configurator().setReservePause(AaveSepolia.USDT, true);
+        _assertBlocked(seller, PositionManager.Blocker.ReservePaused);
+    }
+
+    /// @notice A frozen reserve still repays but takes no new borrow, and the move reopens the
+    ///         debt on the new account, so it is refused.
+    function test_migrateIn_refusesAFrozenDebtReserve() public {
+        openAavePosition(seller, COLLATERAL, DEBT);
+        _configurator().setReserveFreeze(AaveSepolia.USDT, true);
+        _assertBlocked(seller, PositionManager.Blocker.ReserveFrozen);
+    }
+
+    /// @notice A siloed reserve may be the only debt its borrower has, a rule the flash loan leg
+    ///         of the move cannot honor, so the move is refused.
+    function test_migrateIn_refusesSiloedBorrowing() public {
+        // Aave refuses to silo a reserve anyone still owes, and the live market carries USDT
+        // debt, so the test borrows the one reserve with no debt behind it and silos it first.
+        IPoolConfigurator configurator = _configurator();
+        configurator.setReserveBorrowing(AAVE_TOKEN, true);
+        configurator.setSiloedBorrowing(AAVE_TOKEN, true);
+
+        openAavePosition(seller, COLLATERAL, 0);
+        vm.prank(seller);
+        pool.borrow(AAVE_TOKEN, 1e18, 2, 0, seller);
+
+        _assertBlocked(seller, PositionManager.Blocker.SiloedBorrowing);
+    }
+
+    /// @notice An isolated asset held on its own puts its owner in isolation mode, where the
+    ///         collateral rules of the new account would not match, so the move is refused.
+    function test_migrateIn_refusesIsolationMode() public {
+        // USDT already carries a debt ceiling on Sepolia, and Aave refuses to put one on a
+        // reserve that has suppliers, so the isolated asset is supplied rather than invented.
+        // The reserve sits at its supply cap on the live market, so the cap is lifted first.
+        _configurator().setSupplyCap(AaveSepolia.USDT, 0);
+
+        giveToken(AaveSepolia.USDT, seller, 1_000e6);
+        vm.startPrank(seller);
+        IERC20(AaveSepolia.USDT).approve(address(pool), 1_000e6);
+        pool.supply(AaveSepolia.USDT, 1_000e6, seller, 0);
+        // Aave never turns collateral on by itself for an isolated asset, so the owner says so.
+        pool.setUserUseReserveAsCollateral(AaveSepolia.USDT, true);
+        vm.stopPrank();
+
+        _assertBlocked(seller, PositionManager.Blocker.IsolationMode);
+    }
+
+    /// @notice The debt is reopened by borrowing the same amount on the new account, so a reserve
+    ///         that no longer allows borrowing cannot be carried across.
+    function test_migrateIn_refusesBorrowingDisabled() public {
+        // The debt is LINK rather than USDT: the configurator on Sepolia still refuses to turn
+        // borrowing off while the reserve carries the retired stable rate flag, which USDT does.
+        openAavePosition(seller, COLLATERAL, 0);
+        vm.prank(seller);
+        pool.borrow(AaveSepolia.LINK, 10e18, 2, 0, seller);
+
+        _configurator().setReserveBorrowing(AaveSepolia.LINK, false);
+        _assertBlocked(seller, PositionManager.Blocker.BorrowingDisabled);
+    }
+
+    /// @notice The debt travels inside a flash loan, so a reserve with flash loans turned off
+    ///         leaves the move no way across.
+    function test_migrateIn_refusesFlashLoanDisabled() public {
+        openAavePosition(seller, COLLATERAL, DEBT);
+        _configurator().setReserveFlashLoaning(AaveSepolia.USDT, false);
+        _assertBlocked(seller, PositionManager.Blocker.FlashLoanDisabled);
+    }
+
+    /// @notice Moving out lands the position on the owner's own account, and an e-mode that does
+    ///         not match would rewrite the risk of both sides, so it is refused until they agree.
+    function test_migrateOut_refusesEModeMismatch() public {
+        openAavePosition(seller, COLLATERAL, DEBT);
+        uint256 tokenId = migrateIn(seller);
+        delegateForMigrateOut(seller, tokenId);
+
+        // The seller's own Aave account is empty after the move in, so switching it costs nothing.
+        vm.prank(seller);
+        pool.setUserEMode(1);
+        assertEq(pool.getUserEMode(manager.accountOf(tokenId)), 0, "the position moved e-mode too");
+
+        vm.prank(seller);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                PositionManager.MigrationBlocked.selector, PositionManager.Blocker.EModeMismatch
+            )
+        );
+        manager.migrateOut(tokenId, seller);
+
+        // Back in step, the same call goes through.
+        vm.prank(seller);
+        pool.setUserEMode(0);
+        vm.prank(seller);
+        manager.migrateOut(tokenId, seller);
+        (uint256 collateral, uint256 debt,,,,) = pool.getUserAccountData(seller);
+        assertGt(collateral, 0, "collateral never reached the owner");
+        assertGt(debt, 0, "debt never reached the owner");
+    }
+
+    /// @notice The flash loan callback is only meant to be reachable from inside a migration.
+    function test_executeOperation_refusesDirectCall() public {
+        address[] memory assets = new address[](0);
+        uint256[] memory amounts = new uint256[](0);
+
+        // Wrong sender: the pool is the only caller the callback answers.
+        vm.prank(stranger);
+        vm.expectRevert(PositionManager.BadCallback.selector);
+        manager.executeOperation(assets, amounts, amounts, stranger, bytes(""));
+
+        // Right sender, wrong initiator: the pool relaying someone else's flash loan.
+        vm.prank(address(pool));
+        vm.expectRevert(PositionManager.BadCallback.selector);
+        manager.executeOperation(assets, amounts, amounts, stranger, bytes(""));
+
+        // Right sender and initiator, but no migration is in progress.
+        vm.prank(address(pool));
+        vm.expectRevert(PositionManager.BadCallback.selector);
+        manager.executeOperation(assets, amounts, amounts, address(manager), bytes(""));
     }
 
     function test_roundTrip_preservesValue() public {

@@ -131,8 +131,7 @@ contract MarketHandler is ForkBase {
             selector := mload(add(reason, 0x20))
         }
         if (
-            selector == Marketplace.Paused.selector
-                || selector == Marketplace.NotListed.selector
+            selector == Marketplace.Paused.selector || selector == Marketplace.NotListed.selector
                 || selector == Marketplace.ListingExpired.selector
                 || selector == Marketplace.ListingInvalid.selector
                 || selector == Marketplace.SelfPurchase.selector

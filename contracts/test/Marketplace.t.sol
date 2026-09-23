@@ -62,6 +62,21 @@ contract MarketplaceTest is ForkBase {
         vm.stopPrank();
     }
 
+    function test_escrow_blocksEModeChange() public {
+        _list();
+        vm.prank(seller);
+        vm.expectRevert(PositionManager.Escrowed.selector);
+        manager.setEMode(tokenId, 1);
+
+        // Off the market the same seller may change it again. Category 0 is Aave's "no e-mode",
+        // which every position accepts.
+        vm.startPrank(seller);
+        market.cancel(tokenId);
+        manager.setEMode(tokenId, 0);
+        vm.stopPrank();
+        assertEq(pool.getUserEMode(manager.accountOf(tokenId)), 0, "e-mode not settable off market");
+    }
+
     function test_escrow_allowsSupplyAndRepay() public {
         _list();
         uint256 hfBefore = healthFactor(tokenId);
@@ -83,6 +98,34 @@ contract MarketplaceTest is ForkBase {
         vm.prank(seller);
         vm.expectRevert(PositionManager.Escrowed.selector);
         manager.migrateOut(tokenId, seller);
+    }
+
+    function test_escrow_directTransferReverts() public {
+        vm.prank(seller);
+        vm.expectRevert(PositionManager.DirectEscrowTransfer.selector);
+        manager.transferFrom(seller, address(market), tokenId);
+        assertEq(manager.ownerOf(tokenId), seller, "owner changed");
+    }
+
+    function test_escrow_directSafeTransferReverts() public {
+        vm.prank(seller);
+        vm.expectRevert(PositionManager.DirectEscrowTransfer.selector);
+        manager.safeTransferFrom(seller, address(market), tokenId);
+        assertEq(manager.ownerOf(tokenId), seller, "owner changed");
+    }
+
+    function test_escrow_approvedOperatorCannotTransfer() public {
+        vm.prank(seller);
+        manager.setApprovalForAll(stranger, true);
+        vm.startPrank(stranger);
+        vm.expectRevert(PositionManager.DirectEscrowTransfer.selector);
+        manager.transferFrom(seller, address(market), tokenId);
+        assertEq(manager.ownerOf(tokenId), seller, "owner changed");
+
+        // The same operator moves the token anywhere else, so only the destination was refused.
+        manager.transferFrom(seller, buyer, tokenId);
+        vm.stopPrank();
+        assertEq(manager.ownerOf(tokenId), buyer, "operator not authorised");
     }
 
     function test_strangerCannotManageListedPosition() public {
@@ -236,6 +279,22 @@ contract MarketplaceTest is ForkBase {
         );
         market.buy(tokenId, defaultLimits(PRICE - 1));
         vm.stopPrank();
+    }
+
+    function test_buy_rejectedWhenHealthFactorBelowMin() public {
+        _list();
+        Marketplace.BuyLimits memory limits = defaultLimits(PRICE);
+        limits.minHealthFactor = healthFactor(tokenId) + 1;
+        vm.startPrank(buyer);
+        IERC20(AaveSepolia.USDC).approve(address(market), PRICE);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                Marketplace.LimitExceeded.selector, Marketplace.Limit.HealthFactor
+            )
+        );
+        market.buy(tokenId, limits);
+        vm.stopPrank();
+        assertEq(manager.ownerOf(tokenId), address(market), "listing did not survive the refusal");
     }
 
     function test_buy_rejectedWhenDebtAboveMax() public {
