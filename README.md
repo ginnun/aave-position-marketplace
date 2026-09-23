@@ -61,13 +61,14 @@ checked inside the buy transaction, against state read at that moment.
 
 ## Run it locally
 
-You need **Node 22 or newer**, **git**, and **Foundry**:
+You need **Node 22 or newer**, **git**, and **Foundry**. The scripts run on Linux and macOS.
 
 ```bash
 curl -L https://foundry.paradigm.xyz | bash && foundryup
 ```
 
-Then:
+Open a new terminal after `foundryup`, so that `forge`, `cast` and `anvil` are on your `PATH`.
+On macOS, `brew install node` gives you Node. Then:
 
 ```bash
 git clone https://github.com/ginnun/aave-position-marketplace.git
@@ -93,8 +94,17 @@ real reserve configuration. Four example positions are created for you:
 
 Bob also keeps a plain Aave position, so you can try carrying one in right away.
 
-If `npm run setup` cannot pin a fork block, the public endpoint no longer serves state that far
-back. Put an archive endpoint in `SEPOLIA_RPC_URL` in `.env` and run it again.
+The public endpoint keeps only recent state, so a pinned block goes stale after some days. If the
+chain fails to start with `state at block ... is pruned` (error code `-32603`), pin a fresh block
+and rebuild:
+
+```bash
+./scripts/pin.sh && npm run reset
+```
+
+The same fix applies to a `.env` copied from another machine, because it carries that machine's
+old block. If `pin.sh` itself fails, the endpoint is not serving state at all right now. Wait a
+minute and run it again, or put another Sepolia endpoint in `SEPOLIA_RPC_URL` in `.env`.
 
 ## Try the whole flow
 
@@ -210,6 +220,7 @@ docs/        Architecture, decisions, threat model, API, user guide
 | [STATIC_ANALYSIS.md](docs/STATIC_ANALYSIS.md) | Every linter warning, fixed or justified |
 | [research/aave-testnet.md](docs/research/aave-testnet.md) | What was measured on chain, and the limits found |
 | [REPORT.md](docs/REPORT.md) | What was built, what the tests found, what is left |
+| [MACOS_AGENT_PROMPT.md](docs/MACOS_AGENT_PROMPT.md) | A prompt that has a coding agent set the project up on a Mac |
 
 ## Safety
 
