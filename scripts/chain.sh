@@ -19,7 +19,18 @@ else
     --auto-impersonate \
     --silent > "$LOG" 2>&1 &
   echo $! > "$PID_FILE"
-  wait_for_rpc "$LOCAL_RPC_URL" || { cat "$LOG"; exit 1; }
+  if ! wait_for_rpc "$LOCAL_RPC_URL" 60 "$(cat "$PID_FILE")"; then
+    # The public endpoint keeps only recent state. When the pinned block has aged out, anvil
+    # cannot build its genesis and dies with "state ... is pruned". Pin a fresh block and
+    # start over, once, instead of asking the user to know that.
+    if grep -q "pruned" "$LOG" && [ "${REPINNED:-0}" != "1" ]; then
+      warn "block ${FORK_BLOCK:-latest} is pruned on the endpoint, pinning a fresh one"
+      rm -f "$PID_FILE"
+      "$ROOT/scripts/pin.sh"
+      REPINNED=1 exec "$ROOT/scripts/reset.sh"
+    fi
+    cat "$LOG"; exit 1
+  fi
   say "local chain is up on $LOCAL_RPC_URL (chain id $LOCAL_CHAIN_ID)"
 fi
 

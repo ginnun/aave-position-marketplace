@@ -23,7 +23,7 @@ if [ "${E2E_REUSE:-0}" != "1" ]; then
   (
     cd "$ROOT"
     CHAIN_ID="$LOCAL_CHAIN_ID" RPC_URL="$LOCAL_RPC_URL" SERVER_PORT="$SERVER_PORT" \
-      env -u DEPLOYER_PRIVATE_KEY setsid node server/src/index.js > "$RUN_DIR/server.log" 2>&1 < /dev/null &
+      env -u DEPLOYER_PRIVATE_KEY nohup node server/src/index.js > "$RUN_DIR/server.log" 2>&1 < /dev/null &
     echo $! > "$RUN_DIR/server.pid"
   )
   ok=0
@@ -44,7 +44,7 @@ if [ "${E2E_REUSE:-0}" != "1" ]; then
   (
     cd "$ROOT"
     WEB_PORT="$WEB_PORT" SERVER_URL="http://127.0.0.1:$SERVER_PORT" \
-      env -u DEPLOYER_PRIVATE_KEY setsid npm run -w web dev -- --host 127.0.0.1 > "$RUN_DIR/web.log" 2>&1 < /dev/null &
+      env -u DEPLOYER_PRIVATE_KEY nohup npm run -w web dev -- --host 127.0.0.1 > "$RUN_DIR/web.log" 2>&1 < /dev/null &
     echo $! > "$RUN_DIR/web.pid"
   )
   ok=0

@@ -37,14 +37,18 @@ warn() { printf '\033[1;33m!!\033[0m %s\n' "$*" >&2; }
 free_port() {
   local port=$1
   local pids
-  # Without ss this whole function was a silent no-op, and the port stayed occupied until
-  # something else failed for a reason that looked unrelated. Say so instead.
-  if ! command -v ss >/dev/null 2>&1; then
-    warn "ss is not installed, so port $port cannot be cleared automatically"
+  # ss is Linux only. macOS has lsof instead, and most Linux systems have both.
+  if command -v ss >/dev/null 2>&1; then
+    pids=$(ss -ltnp 2>/dev/null | awk -v p=":$port" '$4 ~ p {print $NF}' \
+      | grep -oE 'pid=[0-9]+' | cut -d= -f2 | sort -u) || true
+  elif command -v lsof >/dev/null 2>&1; then
+    pids=$(lsof -ti tcp:"$port" -sTCP:LISTEN 2>/dev/null | sort -u) || true
+  else
+    # Without either this whole function was a silent no-op, and the port stayed occupied
+    # until something else failed for a reason that looked unrelated. Say so instead.
+    warn "neither ss nor lsof is installed, so port $port cannot be cleared automatically"
     return 0
   fi
-  pids=$(ss -ltnp 2>/dev/null | awk -v p=":$port" '$4 ~ p {print $NF}' \
-    | grep -oE 'pid=[0-9]+' | cut -d= -f2 | sort -u) || true
   for pid in $pids; do
     kill "$pid" 2>/dev/null || true
   done
@@ -55,9 +59,11 @@ free_port() {
 }
 
 wait_for_rpc() {
-  local url=$1 tries=${2:-60}
+  local url=$1 tries=${2:-60} pid=${3:-}
   for _ in $(seq "$tries"); do
     if cast block-number --rpc-url "$url" >/dev/null 2>&1; then return 0; fi
+    # No point in waiting the full budget on a process that already died.
+    if [ -n "$pid" ] && ! kill -0 "$pid" 2>/dev/null; then break; fi
     sleep 0.5
   done
   echo "rpc never came up: $url" >&2

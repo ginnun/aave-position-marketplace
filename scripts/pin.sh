@@ -14,7 +14,8 @@ if ! cast balance "$ACL_ADMIN" --block "$target" --rpc-url "$SEPOLIA_RPC_URL" >/
 fi
 
 if grep -q '^FORK_BLOCK=' "$ROOT/.env"; then
-  sed -i "s/^FORK_BLOCK=.*/FORK_BLOCK=$target/" "$ROOT/.env"
+  # -i with a suffix is the one form both GNU sed and the BSD sed on macOS accept.
+  sed -i.bak "s/^FORK_BLOCK=.*/FORK_BLOCK=$target/" "$ROOT/.env" && rm -f "$ROOT/.env.bak"
 else
   echo "FORK_BLOCK=$target" >> "$ROOT/.env"
 fi

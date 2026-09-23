@@ -13,4 +13,7 @@ esac
 
 cast rpc evm_increaseTime "$secs" --rpc-url "$LOCAL_RPC_URL" >/dev/null
 cast rpc evm_mine --rpc-url "$LOCAL_RPC_URL" >/dev/null
-say "clock moved forward by $secs seconds (now $(date -d @"$(cast block latest --field timestamp --rpc-url "$LOCAL_RPC_URL")" '+%F %T'))"
+ts=$(cast block latest --field timestamp --rpc-url "$LOCAL_RPC_URL")
+# GNU date reads an epoch with -d @, the BSD date on macOS with -r.
+now=$(date -d @"$ts" '+%F %T' 2>/dev/null || date -r "$ts" '+%F %T')
+say "clock moved forward by $secs seconds (now $now)"
