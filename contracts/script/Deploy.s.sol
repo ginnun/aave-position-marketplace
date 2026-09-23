@@ -42,7 +42,14 @@ contract Deploy is Script {
 
         vm.stopBroadcast();
 
-        _write(address(manager), address(marketplace), feeRecipient, deployer, feeBps);
+        _write(
+            address(manager),
+            manager.ACCOUNT_IMPL(),
+            address(marketplace),
+            feeRecipient,
+            deployer,
+            feeBps
+        );
 
         console2.log("PositionManager", address(manager));
         console2.log("Marketplace    ", address(marketplace));
@@ -51,6 +58,7 @@ contract Deploy is Script {
 
     function _write(
         address manager,
+        address accountImpl,
         address marketplace,
         address feeRecipient,
         address admin,
@@ -61,6 +69,7 @@ contract Deploy is Script {
         vm.serializeUint(key, "deployBlock", block.number);
         vm.serializeUint(key, "feeBps", feeBps);
         vm.serializeAddress(key, "positionManager", manager);
+        vm.serializeAddress(key, "accountImpl", accountImpl);
         vm.serializeAddress(key, "marketplace", marketplace);
         vm.serializeAddress(key, "feeRecipient", feeRecipient);
         vm.serializeAddress(key, "admin", admin);
